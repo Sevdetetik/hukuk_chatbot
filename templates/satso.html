@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SATSO Chat</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #7269ef;
+            /* Ana renk */
+            --secondary-color: #f5f7fb;
+            /* İkincil renk */
+            --sidebar-width: 280px;
+            /* Sidebar genişliği */
+            --header-height: 70px;
+            /* Header yüksekliği */
+            --border-radius: 20px;
+            /* Kenar yuvarlama */
+            --bubble-border-radius: 25px;
+            /* Mesaj balonu kenar yuvarlama */
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            /* Gölge */
+            --hover-brightness: 0.95;
+            /* Hover efekti için parlaklık */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--secondary-color);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .wrapper {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        .chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+
+        .chat-button {
+            width: 70px;
+            /* Daha büyük */
+            height: 70px;
+            /* Daha büyük */
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s ease;
+        }
+
+        .chat-button:hover {
+            background-color: color-mix(in srgb, var(--primary-color), black 10%);
+        }
+
+        .chat-button img {
+            width: 50px;
+            /* Daha büyük */
+            height: 50px;
+            /* Daha büyük */
+            border-radius: 50%;
+        }
+
+        .chat-box {
+            display: none;
+            flex-direction: column;
+            width: 450px;
+            /* Genişlik aynı kalsın */
+            height: 680px;
+            /* Yükseklik artırıldı */
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: absolute;
+            bottom: 90px;
+            right: 0;
+            animation: slideUp 0.4s ease;
+        }
+
+        .chat-box.open {
+            display: flex;
+        }
+
+        .chat-box.minimized {
+            max-height: 55px;
+            /* Minimize durumunda sadece başlık görünecek */
+            overflow: hidden;
+        }
+
+        .chat-box.minimized .chat-body,
+        .chat-box.minimized .chat-footer {
+            display: none;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                /* Daha yumuşak animasyon */
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .chat-header {
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 15px 20px;
+            /* Daha geniş padding */
+            border-top-left-radius: var(--border-radius);
+            border-top-right-radius: var(--border-radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .chat-header span {
+            font-weight: 700;
+            /* Daha kalın */
+            font-size: 1.1rem;
+            /* Daha büyük */
+        }
+
+        .chat-controls {
+            display: flex;
+            gap: 15px;
+            /* Daha fazla boşluk */
+        }
+
+        .chat-controls button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.4rem;
+            /* Daha büyük */
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            /* Daha büyük */
+            height: 30px;
+            /* Daha büyük */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .chat-controls button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-body {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 550px;
+            /* Yükseklik artırıldı */
+            flex-grow: 1;
+        }
+
+        .chat-body::-webkit-scrollbar {
+            width: 10px;
+            /* Daha kalın scrollbar */
+        }
+
+        .chat-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .chat-body::-webkit-scrollbar-thumb {
+            background: #bbb;
+            /* Daha açık renk scrollbar */
+            border-radius: 10px;
+        }
+
+        .chat-body::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .bot-message,
+        .user-message {
+            padding: 12px 18px;
+            margin-bottom: 15px;
+            border-radius: var(--bubble-border-radius);
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.5s ease;
+            align-self: flex-start;
+            width: auto;
+            max-width: 80%;
+            float: left;
+            clear: both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bot-message {
+            background-color: #f0f0f0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .user-message {
+            background-color: var(--primary-color);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+            float: right;
+        }
+
+        .chat-footer {
+            padding: 15px;
+            background-color: #e1e1e1;
+            border-bottom-left-radius: var(--border-radius);
+            border-bottom-right-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .chat-footer input {
+            flex-grow: 1;
+            padding: 12px 18px;
+            /* Daha geniş padding */
+            border: none;
+            border-radius: 30px;
+            /* Daha yuvarlak */
+            font-size: 1rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* İç gölge */
+        }
+
+        .chat-footer input:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(114, 105, 239, 0.7), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-footer button {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 12px 18px;
+            /* Daha geniş padding */
+            border-radius: 30px;
+            /* Daha yuvarlak */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* Hafif gölge */
+        }
+
+        .chat-footer button:hover {
+            background-color: color-mix(in srgb, var(--primary-color), black 10%);
+        }
+
+        .ready-prompt-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .ready-prompt {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .ready-prompt:hover {
+            background-color: #ced4da;
+        }
+
+        /* KVKK Modal Stilleri */
+        .kvkk-modal {
+            display: flex;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            z-index: 1001;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .kvkk-content {
+            padding: 25px;
+            /* Daha geniş padding */
+            text-align: center;
+        }
+
+        .kvkk-content h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            /* Daha fazla boşluk */
+            font-size: 1.2rem;
+            /* Daha büyük */
+        }
+
+        .kvkk-content a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .kvkk-content p {
+            margin-bottom: 25px;
+            /* Daha fazla boşluk */
+            font-size: 1rem;
+        }
+
+        .kvkk-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            /* Daha fazla boşluk */
+        }
+
+        .kvkk-button {
+            padding: 10px 20px;
+            /* Daha geniş padding */
+            border-radius: 8px;
+            /* Daha yuvarlak */
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .accept-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+
+        .accept-button:hover {
+            background-color: #45a049;
+        }
+
+        .decline-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+
+        .decline-button:hover {
+            background-color: #da190b;
+        }
+
+        .loading-bubble {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .loading-dots {
+            display: flex;
+            align-items: center;
+        }
+
+        .dot {
+            width: 10px;
+            /* Daha büyük */
+            height: 10px;
+            /* Daha büyük */
+            background-color: #333;
+            border-radius: 50%;
+            margin: 0 4px;
+            /* Daha fazla boşluk */
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .chat-box.minimized .chat-header {
+            display: none;
+            /* Minimize edildiğinde header'ı gizle */
+        }
+
+        .chat-box.minimized {
+            max-height: 0px;
+            /* Minimize durumunda yükseklik 0 olsun */
+            overflow: hidden;
+            padding: 0px;
+        }
+
+        @keyframes bounce {
+            to {
+                transform: translateY(-6px);
+                /* Daha fazla zıplama */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="chat-container">
+                <div class="chat-button" id="chatBotIcon">
+                    <img src="https://www.satso.org.tr/assets/img/satso-logo.png" alt="Chat Bot" />
+                </div>
+
+                <div class="chat-box" id="chatBox">
+                    <div class="chat-header">
+                        <span>SATSO Sohbet Botu</span>
+                        <div class="chat-controls">
+                            <button id="minimizeChat">–</button>
+                            <button id="closeChat">✕</button>
+                        </div>
+                    </div>
+                    <div class="kvkk-modal" id="kvkkModal">
+                        <div class="kvkk-content">
+                            <h2>KVKK Aydınlatma Metni Onayı</h2><br>
+                            <a target="_blank"
+                                href="https://www.kvkk.gov.tr/SharedFolderServer/CMSFiles/a569a068-c079-4189-b134-f57bc727af7d.pdf">KVKK
+                                Aydınlatma Metni</a>
+                            <p>Kişisel verileriniz, canlı destek hizmeti kapsamında işlenmektedir. Devam etmeden önce
+                                onayınızı
+                                rica ederiz.</p>
+                            <div class="kvkk-buttons">
+                                <button class="kvkk-button accept-button" id="acceptKvkk">Kabul Ediyorum</button>
+                                <button class="kvkk-button decline-button" id="declineKvkk">Reddet</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-body" id="chatBody">
+                        <div class="ready-prompt-container">
+                            <div class="ready-prompt" onclick="sendPrompt('Merhaba')">Merhaba</div>
+                            <div class="ready-prompt" onclick="sendPrompt('Teşekkür ederim!')">Teşekkür ederim!</div>
+                            <div class="ready-prompt" onclick="sendPrompt('Yönetim Kurulu Başkanı kim ?')">Yönetim
+                                Kurulu
+                                Başkanı kim ?</div>
+                            <div class="ready-prompt" onclick="sendPrompt('Neler yapabilirsin?')">Neler yapabilirsin?
+                            </div>
+                            <div class="ready-prompt" onclick="sendPrompt('Yardım edebilir misiniz?')">Yardım edebilir
+                                misiniz?
+                            </div>
+                            <div class="bot-message">Merhaba! Size nasıl yardımcı olabilirim?</div>
+                        </div>
+                    </div>
+                    <div class="chat-footer">
+                        <input type="text" id="userInput" placeholder="Mesajınızı yazın...">
+                        <button id="sendMessage">Gönder</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setupBotMessageLinkHandler();
+
+            // Yeni thread oluştur
+            fetch('/satso', { method: 'GET' }) // GET isteği ile yeni thread ID'si alınacak
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to create new thread');
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        let kvkkAccepted = false; // KVKK kabul durumu
+        let isChatMinimized = false; // Sohbet kutusunun minimize durumu
+
+        const kvkkModal = document.getElementById("kvkkModal");
+        const chatBox = document.getElementById("chatBox");
+        const chatBotIcon = document.getElementById("chatBotIcon");
+        const closeChat = document.getElementById("closeChat");
+        const minimizeChat = document.getElementById("minimizeChat");
+        const chatBody = document.getElementById("chatBody");
+        const sendMessageButton = document.getElementById("sendMessage"); // sendMessage butonunu seçiyoruz
+        const userInput = document.getElementById("userInput");
+
+        function setupBotMessageLinkHandler() {
+            // MutationObserver yapılandırması
+            const config = {
+                childList: true,
+                subtree: true
+            };
+
+            // Callback fonksiyonu
+            const callback = function (mutationsList, observer) {
+                for (const mutation of mutationsList) {
+                    if (mutation.type === 'childList') {
+                        // Yeni eklenen node'ları kontrol et
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === 1) { // Element node ise
+                                // Bot mesajı içindeki tüm linkleri seç
+                                const links = node.querySelectorAll('a');
+
+                                // Her link için
+                                links.forEach(link => {
+                                    if (!link.hasAttribute('target')) {
+                                        link.setAttribute('target', '_blank');
+                                        link.setAttribute('rel', 'noopener noreferrer');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            };
+
+            // Observer'ı oluştur
+            const observer = new MutationObserver(callback);
+
+            // Chat body'yi izlemeye başla
+            const chatBody = document.getElementById('chatBody');
+            observer.observe(chatBody, config);
+        }
+
+        chatBotIcon.addEventListener("click", () => {
+            chatBox.style.display = "flex";
+        });
+
+        // KVKK kabul edildiğinde modalı gizle ve sohbeti aktif hale getir
+        document.getElementById("acceptKvkk").addEventListener("click", () => {
+            kvkkModal.style.display = "none";
+            kvkkAccepted = true; // KVKK onay durumu güncelle
+        });
+
+        // KVKK reddedildiğinde sayfayı yenile
+        document.getElementById("declineKvkk").addEventListener("click", () => {
+            window.location.reload();
+        });
+
+        function sendPrompt(text) {
+            document.getElementById("userInput").value = text;
+            sendMessageFunction();
+        }
+
+        closeChat.addEventListener("click", () => {
+            chatBox.classList.remove("open");
+            chatBox.style.display = "none";
+            window.location.reload();
+        });
+
+        minimizeChat.addEventListener("click", () => {
+            isChatMinimized = !isChatMinimized;
+            chatBox.classList.toggle("minimized", isChatMinimized);
+        });
+
+        function toggleChatBox() {
+            chatBox.classList.toggle("open");
+            isChatMinimized = false;
+            chatBox.classList.remove("minimized");
+        }
+
+        chatBotIcon.addEventListener("click", toggleChatBox);
+
+        // addMessage fonksiyonu güncellendi:
+        function addMessage(text, className) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add(className);
+            // text'i doğrudan innerHTML'e atamadan önce decode ediyoruz
+            messageDiv.innerHTML = text;
+            chatBody.appendChild(messageDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        // Mesajdaki 【...†source】 kalıplarını temizleyen fonksiyon
+        function cleanMessage(message) {
+            return message.replace(/【.*?†source】/g, '');
+        }
+
+        async function sendMessageFunction() {
+            // KVKK onayı kontrolü
+            if (!kvkkAccepted) {
+                alert("Sohbete başlamadan önce KVKK aydınlatma metnini kabul etmeniz gerekmektedir.");
+                return;
+            }
+
+            const userMessage = userInput.value;
+            if (userMessage.trim() !== "") {
+                userInput.disabled = true;
+                sendMessageButton.disabled = true;
+                addMessage(userMessage, "user-message");
+                userInput.value = "";
+
+                const loadingDiv = document.createElement("div");
+                loadingDiv.classList.add("bot-message", "loading-bubble");
+                loadingDiv.innerHTML = `
+    <div class="loading-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+`;
+                chatBody.appendChild(loadingDiv);
+                chatBody.scrollTop = chatBody.scrollHeight;
+
+                try {
+                    const response = await fetch("/satso", {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'message=' + encodeURIComponent(userMessage),
+                    });
+
+                    loadingDiv.remove();
+
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                    // JSON yanıtını doğrudan işle
+                    const data = await response.json();
+                    // Asistan mesajını al ve ekle
+                    const assistantMessage = data.messages.find(msg => msg.role === 'assistant').content;
+
+                    // Asistan mesajını önce temizle, sonra Marked ile işle ve ekle
+                    const cleanedAssistantMessage = cleanMessage(assistantMessage);
+                    addMessage(marked.parse(cleanedAssistantMessage), "bot-message");
+
+                } catch (error) {
+                    addMessage(`❌ Bir hata oluştu: ${error.message}`, "bot-message", "error");
+                } finally {
+                    userInput.disabled = false;
+                    sendMessageButton.disabled = false;
+                    userInput.focus();
+                }
+            }
+        }
+
+        sendMessageButton.addEventListener("click", sendMessageFunction);
+        userInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") sendMessageFunction();
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+
+</html>

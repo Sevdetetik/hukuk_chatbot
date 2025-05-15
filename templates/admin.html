@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+body {
+  background-color: #f8f9fa;
+  padding: 20px;
+}
+.container {
+  max-width: 1200px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+h1, h2, h3 {
+  color: #007bff;
+  margin-bottom: 20px;
+}
+.btn-primary {
+  background-color: #007bff;
+  border: none;
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+.management-link {
+  display: inline-block;
+  margin: 10px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white !important;
+  text-decoration: none;
+  border-radius: 5px;
+}
+.assistant-item {
+  border: 1px solid #ddd;
+  margin: 10px 0;
+  padding: 15px;
+  border-radius: 5px;
+}
+.form-control {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+}
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 5px;
+}
+.mt-4 {
+  margin-top: 20px;
+}
+.card {
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.interface-section {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  background-color: #f9f9f9;
+}
+.interface-title {
+  font-size: 1.5rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 15px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="text-center">Admin Panel</h1>
+  
+  <div class="text-center mb-4">
+    <a href="{{ url_for('vector_stores') }}" class="management-link">Manage Vector Stores</a>
+    <a href="{{ url_for('assistants') }}" class="management-link">Manage Assistants</a>
+    <a href="/chat" class="management-link">Back To Home</a>
+  </div>
+
+  <!-- Chat Interface Section -->
+  <div class="interface-section">
+    <h2 class="interface-title">Chat Assistant Selection</h2>
+    <p>Choose which assistant to use for the main chat interface</p>
+    <form action="{{ url_for('select_assistant') }}" method="post">
+      <div class="form-group">
+        <select name="assistant_id" class="form-control">
+          {% for assistant in assistants %}
+            <option value="{{ assistant.id }}">{{ assistant.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <input type="hidden" name="interface_type" value="chat">
+      <button type="submit" class="btn btn-primary">Set Chat Assistant</button>
+    </form>
+    
+    <div class="mt-4">
+      <h3>Currently Active Chat Assistant:</h3>
+      {% set found = false %}
+      {% for assistant in assistants %}
+        {% if assistant.is_active and assistant.interface_type == 'chat' %}
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">{{ assistant.name }}</h4>
+              <p class="card-text"><strong>Instructions:</strong> {{ assistant.instructions }}</p>
+              <p class="card-text"><strong>Tools:</strong> {{ assistant.tools }}</p>
+            </div>
+          </div>
+          {% set found = true %}
+        {% endif %}
+      {% endfor %}
+      {% if not found %}
+        <p class="alert alert-warning">No active assistant set for the Chat interface.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- SATSO Interface Section -->
+  <div class="interface-section">
+    <h2 class="interface-title">SATSO Assistant Selection</h2>
+    <p>Choose which assistant to use for the SATSO interface</p>
+    <form action="{{ url_for('select_assistant') }}" method="post">
+      <div class="form-group">
+        <select name="assistant_id" class="form-control">
+          {% for assistant in assistants %}
+            <option value="{{ assistant.id }}">{{ assistant.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <input type="hidden" name="interface_type" value="satso">
+      <button type="submit" class="btn btn-primary">Set SATSO Assistant</button>
+    </form>
+    
+    <div class="mt-4">
+      <h3>Currently Active SATSO Assistant:</h3>
+      {% set found = false %}
+      {% for assistant in assistants %}
+        {% if assistant.is_active and assistant.interface_type == 'satso' %}
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">{{ assistant.name }}</h4>
+              <p class="card-text"><strong>Instructions:</strong> {{ assistant.instructions }}</p>
+              <p class="card-text"><strong>Tools:</strong> {{ assistant.tools }}</p>
+            </div>
+          </div>
+          {% set found = true %}
+        {% endif %}
+      {% endfor %}
+      {% if not found %}
+        <p class="alert alert-warning">No active assistant set for the SATSO interface.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ARIS Interface Section -->
+  <div class="interface-section">
+    <h2 class="interface-title">ARIS Assistant Selection</h2>
+    <p>Choose which assistant to use for the ARIS interface</p>
+    <form action="{{ url_for('select_assistant') }}" method="post">
+      <div class="form-group">
+        <select name="assistant_id" class="form-control">
+          {% for assistant in assistants %}
+            <option value="{{ assistant.id }}">{{ assistant.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <input type="hidden" name="interface_type" value="aris">
+      <button type="submit" class="btn btn-primary">Set ARIS Assistant</button>
+    </form>
+    
+    <div class="mt-4">
+      <h3>Currently Active ARIS Assistant:</h3>
+      {% set found = false %}
+      {% for assistant in assistants %}
+        {% if assistant.is_active and assistant.interface_type == 'aris' %}
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">{{ assistant.name }}</h4>
+              <p class="card-text"><strong>Instructions:</strong> {{ assistant.instructions }}</p>
+              <p class="card-text"><strong>Tools:</strong> {{ assistant.tools }}</p>
+            </div>
+          </div>
+          {% set found = true %}
+        {% endif %}
+      {% endfor %}
+      {% if not found %}
+        <p class="alert alert-warning">No active assistant set for the ARIS interface.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- All Assistants List -->
+  <h2 class="mt-5">All Available Assistants</h2>
+  {% for assistant in assistants %}
+    <div class="assistant-item">
+      <h3>{{ assistant.name }}</h3>
+      <p><strong>Instructions:</strong> {{ assistant.instructions }}</p>
+      <p><strong>Tools:</strong> {{ assistant.tools }}</p>
+      <p><strong>Interface:</strong> {{ assistant.interface_type }}</p>
+      <p><strong>Status:</strong> {% if assistant.is_active %}Active{% else %}Inactive{% endif %}</p>
+      <form action="{{ url_for('delete_assistant', id=assistant.id) }}" method="POST" style="display: inline;">
+        <button type="submit" class="btn btn-danger">Delete</button>
+      </form>
+    </div>
+  {% endfor %}
+</div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+Flask
+flask-login
+Flask-SQLAlchemy
+openai
+Werkzeug
+markdown

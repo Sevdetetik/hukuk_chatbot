@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thread Yönetimi</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4a6572;
+            color: #f9aa33;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #344955;
+        }
+        .thread {
+            background-color: #e9e9e9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .thread-id {
+            font-weight: bold;
+        }
+        .metadata {
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Thread Yönetimi</h1>
+
+        <!-- Yeni Thread Oluşturma Formu -->
+        <h2>Yeni Thread Oluştur</h2>
+        <form method="POST">
+            <input type="hidden" name="create_thread" value="1">
+            <div class="form-group">
+                <label for="initial_message">İlk Mesaj:</label>
+                <textarea id="initial_message" name="initial_message" required></textarea>
+            </div>
+            <button type="submit">Thread Oluştur</button>
+        </form>
+
+        <!-- Mevcut Thread'ler -->
+        <h2>Mevcut Thread'ler</h2>
+        {% for thread in threads.data %}
+            <div class="thread">
+                <p class="thread-id">Thread ID: {{ thread.id }}</p>
+                <div class="metadata">
+                    <p>Oluşturulma Tarihi: {{ thread.created_at }}</p>
+                    <p>Metadata: {{ thread.metadata }}</p>
+                </div>
+
+                <!-- Mesaj Ekleme Formu -->
+                <form method="POST">
+                    <input type="hidden" name="add_message" value="1">
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <div class="form-group">
+                        <label for="message_content">Mesaj İçeriği:</label>
+                        <textarea id="message_content" name="message_content" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="assistant_id">Asistan ID (isteğe bağlı):</label>
+                        <input type="text" id="assistant_id" name="assistant_id">
+                    </div>
+                    <button type="submit">Mesaj Ekle</button>
+                </form>
+
+                <!-- Thread Güncelleme Formu -->
+                <form method="POST">
+                    <input type="hidden" name="update_thread" value="1">
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <div class="form-group">
+                        <label for="assistant_id_update">Asistan ID:</label>
+                        <input type="text" id="assistant_id_update" name="assistant_id">
+                    </div>
+                    <button type="submit">Thread'i Güncelle</button>
+                </form>
+
+                <!-- Thread Silme Formu -->
+                <form method="POST">
+                    <input type="hidden" name="delete_thread" value="1">
+                    <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                    <button type="submit">Thread'i Sil</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

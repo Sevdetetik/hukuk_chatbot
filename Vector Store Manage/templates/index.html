@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Vector Store Manager</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .alert {
+            margin-top: 20px;
+        }
+
+        .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>OpenAI Vector Store Manager</h1>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Create Vector Store Form -->
+        <div class="card">
+            <div class="card-header">
+                Create Vector Store
+            </div>
+            <div class="card-body">
+                <form action="/admin/database" method="post">
+                    <input type="hidden" name="create_vector_store" value="true">
+                    <div class="form-group">
+                        <label for="vector_store_name">Vector Store Name:</label>
+                        <input type="text" class="form-control" id="vector_store_name" name="vector_store_name"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- List of Vector Stores -->
+        <div class="card">
+            <div class="card-header">
+                Vector Stores
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for vector_store in vector_stores %}
+                    <li class="list-group-item">
+                        <a href="{{ url_for('index', vector_store_id=vector_store.id) }}">{{ vector_store.name }} ({{
+                            vector_store.id }})</a>
+                        <form action="/admin/database/delete_vector_store" method="post" style="display: inline;">
+                            <input type="hidden" name="vector_store_id" value="{{ vector_store.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Are you sure you want to delete this vector store?');">Delete</button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item">No vector stores found.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <!-- Upload and Manage Files Section -->
+        {% if selected_vector_store_id %}
+        <div class="card">
+            <div class="card-header">
+                Manage Files in Vector Store: {{ selected_vector_store_id }}
+            </div>
+            <div class="card-body">
+                <!-- Upload File Form -->
+                <form action="/admin/database" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="upload_file" value="true">
+                    <input type="hidden" name="vector_store_id" value="{{ selected_vector_store_id }}">
+                    <div class="form-group">
+                        <label for="file">Upload File:</label>
+                        <input type="file" class="form-control-file" id="file" name="file" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+
+                <!-- List of Files -->
+                <h2 class="mt-4">Files:</h2>
+                <ul class="list-group mt-3">
+                    {% for file in files %}
+                    <li class="list-group-item">
+                        {{ file.id }}
+                        <button class="btn btn-danger btn-sm float-right"
+                            onclick="deleteFile('{{ selected_vector_store_id }}', '{{ file.id }}')">Delete</button>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item">No files found for this vector store.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function deleteFile(vectorStoreId, fileId) {
+            if (confirm('Are you sure you want to delete this file?')) {
+                fetch('/admin/database/delete_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `vector_store_id=${vectorStoreId}&file_id=${fileId}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        if (data.status === 'success') {
+                            window.location.reload();
+                        }
+                    });
+            }
+        }
+    </script>
+</body>
+
+</html>

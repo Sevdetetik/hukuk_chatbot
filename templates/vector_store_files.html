@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Store Files</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-primary,
+        .btn-danger {
+            color: white;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .table {
+            margin-top: 20px;
+        }
+
+        .supported-files {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .alert {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Files in Vector Store: {{ vector_store_id }}</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div
+            class="mb-4 p-4 rounded {% if category == 'error' %}bg-red-100 text-red-700 border border-red-400{% else %}bg-green-100 text-green-700 border border-green-400{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('upload_file_to_vector_store', vector_store_id=vector_store_id) }}" method="post"
+            enctype="multipart/form-data" id="uploadForm">
+            <div class="form-group">
+                <label for="file">Upload Files:</label>
+                <input type="file" class="form-control-file" id="file" name="file" multiple required
+                    accept=".c,.cpp,.cs,.css,.doc,.docx,.go,.html,.java,.js,.json,.md,.pdf,.php,.pptx,.py,.rb,.sh,.tex,.ts,.txt">
+            </div>
+            <div class="alert alert-danger" id="fileError"></div>
+            <button type="submit" class="btn btn-primary">Upload Files</button>
+        </form>
+
+        <div class="supported-files">
+            <h5>Supported File Types:</h5>
+            <ul>
+                <li>Text Files (.txt)</li>
+                <li>Programming Files (.c, .cpp, .cs, .go, .java, .js, .py, .rb, .ts, .php)</li>
+                <li>Web Files (.html, .css, .json)</li>
+                <li>Documents (.doc, .docx, .pdf, .pptx)</li>
+                <li>Other (.md, .sh, .tex)</li>
+            </ul>
+        </div>
+        <div class="mt-3">
+            <p class="text-muted">
+                Showing {{ files|length }} of {{ total_files }} files
+            </p>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Filename</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in files %}
+                <tr>
+                    <td>{{ file.id }}</td>
+                    <td>{{ file.filename }}</td>
+                    <td>
+                        <form
+                            action="{{ url_for('delete_file_from_vector_store', vector_store_id=vector_store_id, file_id=file.id) }}"
+                            method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item"><a class="page-link"
+                        href="{{ url_for('vector_store_files', vector_store_id=vector_store_id, page=page-1) }}">Previous</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                {% endif %}
+
+                {% for page_num in range(1, total_pages + 1) %}
+                {% if page_num == page %}
+                <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                {% else %}
+                <li class="page-item"><a class="page-link"
+                        href="{{ url_for('vector_store_files', vector_store_id=vector_store_id, page=page_num) }}">{{
+                        page_num }}</a></li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page < total_pages %} <li class="page-item"><a class="page-link"
+                        href="{{ url_for('vector_store_files', vector_store_id=vector_store_id, page=page+1) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                    {% endif %}
+            </ul>
+        </nav>
+        <p class="text-center mt-3">
+            Page {{ page }} of {{ total_pages }}
+        </p>
+        <a href="{{ url_for('vector_stores') }}" class="btn btn-secondary">Back to Vector Stores</a>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = function (e) {
+            const files = document.getElementById('file').files;
+            const allowedTypes = [
+                'text/x-c', 'text/x-c++', 'text/x-csharp', 'text/css',
+                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'text/x-golang', 'text/html', 'text/x-java', 'text/javascript',
+                'application/json', 'text/markdown', 'application/pdf', 'text/x-php',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/x-python', 'text/x-ruby', 'application/x-sh', 'text/x-tex',
+                'application/typescript', 'text/plain'
+            ];
+
+            const allowedExtensions = [
+                '.c', '.cpp', '.cs', '.css', '.doc', '.docx', '.go', '.html',
+                '.java', '.js', '.json', '.md', '.pdf', '.php', '.pptx',
+                '.py', '.rb', '.sh', '.tex', '.ts', '.txt'
+            ];
+
+            for (let file of files) {
+                const extension = '.' + file.name.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(extension)) {
+                    const errorDiv = document.getElementById('fileError');
+                    errorDiv.style.display = 'block';
+                    errorDiv.textContent = `File type not supported: ${file.name}`;
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            return true;
+        };
+    </script>
+</body>
+
+</html>

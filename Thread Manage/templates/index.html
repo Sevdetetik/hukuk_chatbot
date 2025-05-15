@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thread Yönetimi</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { padding: 20px; }
+        .thread-container { margin-bottom: 30px; }
+        .thread-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Thread Yönetimi</h1>
+
+        <!-- Thread Oluşturma Formu -->
+        <div class="thread-container">
+            <h2>Thread Oluştur</h2>
+            <form id="createThreadForm">
+                <div class="form-group">
+                    <label for="initialMessages">İlk Mesajlar:</label>
+                    <textarea class="form-control" id="initialMessages" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Oluştur</button>
+            </form>
+        </div>
+
+        <!-- Thread'e Mesaj Ekleme Formu -->
+        <div class="thread-container">
+            <h2>Thread'e Mesaj Ekle</h2>
+            <form id="addMessageForm">
+                <div class="form-group">
+                    <label for="threadId">Thread ID:</label>
+                    <input type="text" class="form-control" id="threadId">
+                </div>
+                <div class="form-group">
+                    <label for="messageContent">Mesaj:</label>
+                    <textarea class="form-control" id="messageContent" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Mesaj Ekle</button>
+            </form>
+        </div>
+
+        <!-- Thread Güncelleme Formu -->
+        <div class="thread-container">
+            <h2>Thread Güncelle</h2>
+            <form id="updateThreadForm">
+                <div class="form-group">
+                    <label for="updateThreadId">Thread ID:</label>
+                    <input type="text" class="form-control" id="updateThreadId">
+                </div>
+                <div class="form-group">
+                    <label for="updateMetadata">Metadata (JSON):</label>
+                    <textarea class="form-control" id="updateMetadata" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-warning">Güncelle</button>
+            </form>
+        </div>
+
+        <!-- Thread Silme Formu -->
+        <div class="thread-container">
+            <h2>Thread Sil</h2>
+            <form id="deleteThreadForm">
+                <div class="form-group">
+                    <label for="deleteThreadId">Thread ID:</label>
+                    <input type="text" class="form-control" id="deleteThreadId">
+                </div>
+                <button type="submit" class="btn btn-danger">Sil</button>
+            </form>
+        </div>
+
+        <!-- Mevcut Thread'ler -->
+        <div class="thread-container">
+            <h2>Mevcut Thread'ler</h2>
+            <div id="threadsList">
+                <!-- Thread'ler buraya yüklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Sayfa yüklendiğinde mevcut thread'leri listele
+            listThreads();
+
+            // Thread Oluşturma Formu için olay işleyicisi
+            $('#createThreadForm').on('submit', function(e) {
+                e.preventDefault();
+                var initialMessages = $('#initialMessages').val();
+                $.ajax({
+                    url: '/api/threads',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({messages: [{role: "user", content: initialMessages}]}),
+                    success: function(response) {
+                        alert('Thread oluşturuldu: ' + response.thread_id);
+                        listThreads(); // Thread listesini güncelle
+                    },
+                    error: function(error) {
+                        alert('Hata: ' + error.responseJSON.error);
+                    }
+                });
+            });
+
+            // Thread'e Mesaj Ekleme Formu için olay işleyicisi
+            $('#addMessageForm').on('submit', function(e) {
+                e.preventDefault();
+                var threadId = $('#threadId').val();
+                var messageContent = $('#messageContent').val();
+                $.ajax({
+                    url: '/api/threads/' + threadId + '/messages',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({message: messageContent}),
+                    success: function(response) {
+                        alert('Mesaj eklendi: ' + response.message_id);
+                        listThreads(); // Thread listesini güncelle
+                    },
+                    error: function(error) {
+                        alert('Hata: ' + error.responseJSON.error);
+                    }
+                });
+            });
+
+            // Thread Güncelleme Formu için olay işleyicisi
+            $('#updateThreadForm').on('submit', function(e) {
+                e.preventDefault();
+                var threadId = $('#updateThreadId').val();
+                var metadata = JSON.parse($('#updateMetadata').val() || '{}');
+                $.ajax({
+                    url: '/api/threads/' + threadId,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({metadata: metadata}),
+                    success: function(response) {
+                        alert('Thread güncellendi: ' + response.thread_id);
+                        listThreads(); // Thread listesini güncelle
+                    },
+                    error: function(error) {
+                        alert('Hata: ' + error.responseJSON.error);
+                    }
+                });
+            });
+
+            // Thread Silme Formu için olay işleyicisi
+            $('#deleteThreadForm').on('submit', function(e) {
+                e.preventDefault();
+                var threadId = $('#deleteThreadId').val();
+                $.ajax({
+                    url: '/api/threads/' + threadId,
+                    type: 'DELETE',
+                    success: function(response) {
+                        alert('Thread silindi: ' + threadId);
+                        listThreads(); // Thread listesini güncelle
+                    },
+                    error: function(error) {
+                        alert('Hata: ' + error.responseJSON.error);
+                    }
+                });
+            });
+        });
+
+        // Mevcut thread'leri listelemek için fonksiyon
+        function listThreads() {
+            $.ajax({
+                url: '/api/threads',
+                type: 'GET',
+                success: function(threads) {
+                    $('#threadsList').empty();
+                    threads.forEach(function(thread) {
+                        $('#threadsList').append(
+                            '<div class="thread-item">Thread ID: ' + thread.thread_id + 
+                            (thread.metadata && Object.keys(thread.metadata).length > 0 ? '<br>Metadata: ' + JSON.stringify(thread.metadata) : '') +
+                            '</div>'
+                        );
+                    });
+                },
+                error: function(error) {
+                    alert('Thread\'ler listelenirken hata oluştu.');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
