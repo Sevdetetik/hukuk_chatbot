@@ -3,3 +3,4 @@ navbarda sidebarı kapatınca kısa kalıyor.
 mikrofon ve sesi metine dönüştürme yapılacak.
 bir tanıtım sayfası oluşturulacak.
 dark mode eklenecek
+** yargıtay ve danıştayın içi boş....

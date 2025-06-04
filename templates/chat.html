@@ -236,18 +236,52 @@
     </div>
   </div>
 
-  <div class="wrapper">
-    <div class="sidebar" id="sidebar">
-      <div style="padding: 20px;">
-        <button class="new-chat" onclick="startNewChat()">+ Yeni Sohbet</button>
-        <ul id="chat-list" class="mt-3 list-unstyled"></ul>
-      </div>
-    </div>
+<div class="wrapper">
+  <div class="sidebar" id="sidebar">
+    <div style="padding: 20px;">
+      <!-- Yeni sohbet butonu -->
+      <button class="new-chat" onclick="window.location.href='/chat'">+ Yeni Sohbet</button>
 
-    <div class="main-content">
-      <div class="chat-container" id="chat-container"></div>
+      <!-- Sohbet listesi -->
+      <h6 class="mt-4">Sohbetlerim</h6>
+      <ul class="mt-2 list-unstyled">
+        {% for thread in threads %}
+          <li style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <!-- Sohbet linki -->
+            <a href="{{ url_for('chat', thread_id=thread.id) }}"
+               style="text-decoration: none; color: var(--primary-color); flex-grow: 1; padding: 6px 10px; border-radius: 8px; background-color: #f0f0f5;">
+              {{ thread.preview }}
+            </a>
+            <!-- Silme formu -->
+            <form method="POST" action="{{ url_for('delete_thread', thread_id=thread.id) }}" style="margin-left: 8px;">
+              <button type="submit" title="Sohbeti Sil" style="background: none; border: none; color: red; font-size: 1.1rem;">&times;</button>
+            </form>
+          </li>
+        {% else %}
+          <li style="color: #aaa; font-size: 0.9rem;">Henüz sohbet yok.</li>
+        {% endfor %}
+      </ul>
     </div>
   </div>
+
+  <div class="main-content">
+    <div class="chat-container" id="chat-container">
+      {% for message in messages %}
+        <div class="message {{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+          {{ message.content | safe }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+   <!-- <div class="chat-container" id="chat-container">
+                {% for message in messages %}
+                <div class="message {{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+                    {{ message.content | safe }}
+                </div>
+                {% endfor %}
+            </div> -->
 
   <div class="input-area">
     <div class="input-container">
@@ -264,6 +298,62 @@
     const sendButton = document.getElementById('send-button');
     const chatList = document.getElementById('chat-list');
 
+    function appendMessage(role, content, skipIfExists = false) {
+            // Eğer skipIfExists true ise ve son mesaj aynı içeriğe sahipse, ekleme yapma
+            if (skipIfExists) {
+                const messages = document.querySelectorAll('.message');
+                if (messages.length > 0) {
+                    const lastMessage = messages[messages.length - 1];
+                    if (lastMessage.innerHTML === content) {
+                        return;
+                    }
+                }
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(role === 'user' ? 'user-message' : 'assistant-message');
+            messageDiv.innerHTML = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+    const userMessage = messageInput.value.trim();
+    if (userMessage === '') return;
+
+    appendMessage('user', userMessage);
+    messageInput.value = '';
+
+    const pathArray = window.location.pathname.split('/');
+    const thread_id = pathArray[pathArray.length - 1];
+    const chatUrl = thread_id && thread_id !== 'chat' ? `/chat/${thread_id}` : '/chat';
+
+    fetch(chatUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'message=' + encodeURIComponent(userMessage),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.messages) {
+                data.messages.forEach(message => {
+                    const content = message.content;
+                    appendMessage(message.role, content, true);
+                });
+            } else if (data.error) {
+                appendMessage('assistant', 'Hata: ' + data.error);
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            appendMessage('assistant', 'Bir hata oluştu.');
+        });
+}
+
+
     function toggleDropdown() {
       document.getElementById('dropdown-menu').classList.toggle('show');
     }
@@ -272,17 +362,6 @@
   document.body.classList.toggle('sidebar-open');
 }
 
-    function appendMessage(role, content) {
-      const div = document.createElement('div');
-      div.classList.add('message', role === 'user' ? 'user-message' : 'assistant-message');
-      div.textContent = content;
-      chatContainer.appendChild(div);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-      if (currentThreadId !== null) {
-        conversations[currentThreadId].messages.push({ role, content });
-        saveConversations();
-      }
-    }
 
     function renderChatList() {
       chatList.innerHTML = '';
@@ -320,14 +399,6 @@
       localStorage.setItem('conversations', JSON.stringify(conversations));
     }
 
-    sendButton.addEventListener('click', () => {
-      const message = messageInput.value.trim();
-      if (!message || currentThreadId === null) return;
-      appendMessage('user', message);
-      messageInput.value = '';
-      setTimeout(() => appendMessage('assistant', 'Yanıt: ' + message), 300);
-    });
-
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') sendButton.click();
     });
@@ -340,6 +411,9 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
+       sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage(); });
       const toggleBtn = document.createElement('button');
       toggleBtn.className = 'dark-mode-toggle';
 

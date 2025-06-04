@@ -712,6 +712,25 @@ def aris_chat():
         current_thread_id=current_thread_id
     )
 
+#mesajları silmek için 
+@app.route('/chat/delete/<thread_id>', methods=['POST'])
+@login_required
+def delete_thread(thread_id):
+    thread = Thread.query.get(thread_id)
+
+    if not thread or thread.user_id != current_user.id:
+        flash('Sohbet bulunamadı veya yetkiniz yok.', 'error')
+        return redirect(url_for('chat'))
+
+    # İlgili mesajları da sil
+    Message.query.filter_by(thread_id=thread_id).delete()
+    db.session.delete(thread)
+    db.session.commit()
+
+    flash('Sohbet silindi.', 'success')
+    return redirect(url_for('chat'))
+
+
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
